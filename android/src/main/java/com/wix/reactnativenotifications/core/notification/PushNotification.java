@@ -138,7 +138,10 @@ public class PushNotification implements IPushNotification {
     }
 
     protected Notification buildNotification(PendingIntent intent) {
-        return getNotificationBuilder(intent).build();
+        Notification.Builder builder = getNotificationBuilder(intent);
+        if (builder == null)
+            return null;
+        return builder.build();
     }
 
     protected Notification.Builder getNotificationBuilder(PendingIntent intent) {
@@ -158,7 +161,7 @@ public class PushNotification implements IPushNotification {
     }
 
     protected void postNotification(int id, Notification notification) {
-        if (!isAppOnForeground(mContext)) {
+        if (!isAppOnForeground(mContext) && notification != null) {
             final NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.notify(id, notification);
         }
