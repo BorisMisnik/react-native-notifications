@@ -9,6 +9,7 @@ public interface IPushNotification {
 
     /**
      * Handle an event where notification has just been received.
+     *
      * @throws InvalidNotificationException
      */
     void onReceived() throws InvalidNotificationException;

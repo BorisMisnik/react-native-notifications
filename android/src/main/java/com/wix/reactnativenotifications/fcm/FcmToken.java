@@ -1,4 +1,4 @@
-package com.wix.reactnativenotifications.gcm;
+package com.wix.reactnativenotifications.fcm;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -10,32 +10,31 @@ import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
+import com.google.firebase.iid.FirebaseInstanceId;
 
-import static com.wix.reactnativenotifications.Defs.GCM_SENDER_ID_ATTR_NAME;
+import static com.wix.reactnativenotifications.Defs.FCM_SENDER_ID_ATTR_NAME;
 import static com.wix.reactnativenotifications.Defs.LOGTAG;
 import static com.wix.reactnativenotifications.Defs.TOKEN_RECEIVED_EVENT_NAME;
 
-public class GcmToken implements IGcmToken {
+public class FcmToken implements IFcmToken {
 
     final protected Context mAppContext;
 
     protected static String sToken;
 
-    protected GcmToken(Context appContext) {
+    protected FcmToken(Context appContext) {
         if (!(appContext instanceof ReactApplication)) {
             throw new IllegalStateException("Application instance isn't a react-application");
         }
         mAppContext = appContext;
     }
 
-    public static IGcmToken get(Context context) {
+    public static IFcmToken get(Context context) {
         Context appContext = context.getApplicationContext();
         if (appContext instanceof INotificationsGcmApplication) {
             return ((INotificationsGcmApplication) appContext).getGcmToken(context);
         }
-        return new GcmToken(appContext);
+        return new FcmToken(appContext);
     }
 
     @Override
@@ -52,7 +51,7 @@ public class GcmToken implements IGcmToken {
                 Log.i(LOGTAG, "Manual token refresh => asking for new token");
                 refreshToken();
             } else {
-                Log.i(LOGTAG, "Manual token refresh => publishing existing token ("+sToken+")");
+                Log.i(LOGTAG, "Manual token refresh => publishing existing token (" + sToken + ")");
                 sendTokenToJS();
             }
         }
@@ -66,7 +65,7 @@ public class GcmToken implements IGcmToken {
                 refreshToken();
             } else {
                 // Except for first run, this should be the case.
-                Log.i(LOGTAG, "App initialized => publishing existing token ("+sToken+")");
+                Log.i(LOGTAG, "App initialized => publishing existing token (" + sToken + ")");
                 sendTokenToJS();
             }
         }
@@ -85,15 +84,12 @@ public class GcmToken implements IGcmToken {
 
     @NonNull
     protected String getNewToken() throws Exception {
-        final InstanceID instanceId = InstanceID.getInstance(mAppContext);
-        Log.d(LOGTAG, "GCM is refreshing token... instanceId=" + instanceId.getId());
-
-        // TODO why is this needed?
-        GoogleCloudMessaging.getInstance(mAppContext).close();
+        FirebaseInstanceId instanceId = FirebaseInstanceId.getInstance();
+        Log.d(LOGTAG, "FCM is refreshing token... instanceId=" + instanceId.getId());
 
         try {
-            final String registrationToken = instanceId.getToken(getSenderId(), GoogleCloudMessaging.INSTANCE_ID_SCOPE);
-            Log.i(LOGTAG, "GCM has a new token: instanceId=" + instanceId.getId() + ", token=" + registrationToken);
+            final String registrationToken = instanceId.getToken();
+            Log.i(LOGTAG, "FCM has a new token: instanceId=" + instanceId.getId() + ", token=" + registrationToken);
             return registrationToken;
         } catch (Exception e) {
             throw new Exception("FATAL: Failed to fetch a fresh new token, instanceId=" + instanceId.getId(), e);
@@ -103,7 +99,7 @@ public class GcmToken implements IGcmToken {
     protected String getSenderId() {
         final String senderId = getSenderIdFromManifest();
         if (senderId == null) {
-            throw new IllegalStateException("Sender ID not found in manifest. Did you forget to add it as the value of a '"+GCM_SENDER_ID_ATTR_NAME+"' meta-data field?");
+            throw new IllegalStateException("Sender ID not found in manifest. Did you forget to add it as the value of a '" + FCM_SENDER_ID_ATTR_NAME + "' meta-data field?");
         }
         return senderId;
     }
@@ -112,7 +108,7 @@ public class GcmToken implements IGcmToken {
         final ApplicationInfo appInfo;
         try {
             appInfo = mAppContext.getPackageManager().getApplicationInfo(mAppContext.getPackageName(), PackageManager.GET_META_DATA);
-            return appInfo.metaData.getString(GCM_SENDER_ID_ATTR_NAME);
+            return appInfo.metaData.getString(FCM_SENDER_ID_ATTR_NAME);
         } catch (PackageManager.NameNotFoundException e) {
             // Should REALLY never happen cause we're querying for our own package.
             Log.e(LOGTAG, "Failed to resolve sender ID from manifest", e);
