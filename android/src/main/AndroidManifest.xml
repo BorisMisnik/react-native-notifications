@@ -10,7 +10,7 @@
         <!--
          A proxy-service that gives the library an opportunity to do some work before launching/resuming the actual application task.
          -->
-        <service android:name=".core.ProxyService"/>
+        <service android:name=".core.LocalNotificationService"/>
 
 
         <!-- [START firebase_service] -->
@@ -31,7 +31,7 @@
         <!-- [END firebase_iid_service] -->
 
         <service
-            android:name=".fcm.FcmInstanceIdRefreshHandlerService"
+            android:name=".fcm.FcmTokenService"
             android:exported="false" />
     </application>
 
